@@ -1,5 +1,6 @@
+// app/services/geminiWebSocket.ts
 import { TranscriptionService } from "./transcriptionService";
-import { pcmToWav } from "../utils/audioUtils";
+import { blobToBase64, pcmToWav } from "../utils/audioUtils";
 
 const MODEL = "models/gemini-2.0-flash-exp";
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
@@ -26,6 +27,7 @@ export class GeminiWebSocket {
   private accumulatedPcmData: string[] = [];
 
   constructor(
+    private systemInstructions: string,
     onMessage: (text: string) => void,
     onSetupComplete: () => void,
     onPlayingStateChange: (isPlaying: boolean) => void,
@@ -93,11 +95,19 @@ export class GeminiWebSocket {
         model: MODEL,
         generation_config: {
           response_modalities: ["AUDIO"],
+          temperature: 0.5,
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: "Charon", // or another supported voice: Aoede, Charon, Fenrir, or Puck
+              },
+            },
+          },
         },
         system_instruction: {
           parts: [
             {
-              text: "You are a helpful and friendly chat assistant.",
+              text: this.systemInstructions,
             },
           ],
         },
@@ -247,11 +257,14 @@ export class GeminiWebSocket {
         if (this.accumulatedPcmData.length > 0) {
           try {
             const fullPcmData = this.accumulatedPcmData.join("");
-            const wavData: any = await pcmToWav(fullPcmData, 24000);
+            // Get the WAV blob
+            const wavBlob: Blob = await pcmToWav(fullPcmData, 24000);
+            // Convert the blob to a base64 string
+            const wavDataBase64 = await blobToBase64(wavBlob);
 
             const transcription =
               await this.transcriptionService.transcribeAudio(
-                wavData,
+                wavDataBase64,
                 "audio/wav"
               );
             console.log("[Transcription]:", transcription);

@@ -48,6 +48,7 @@ export default function Home() {
     setMessages((prev) => [...prev, { type: "gemini", text: transcription }]);
   }, []);
 
+  return <LiveAudioChat onTranscription={handleTranscription} />;
   return (
     <>
       <h1 className="text-4xl font-bold text-zinc-800 p-8 pb-0">

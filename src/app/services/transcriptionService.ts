@@ -20,6 +20,7 @@ export class TranscriptionService {
     mimeType: string = "audio/wav"
   ): Promise<string> {
     try {
+      return "Transcription is disabled";
       const result = await this.model.generateContent([
         { inlineData: { mimeType, data: audioBase64 } },
         {
